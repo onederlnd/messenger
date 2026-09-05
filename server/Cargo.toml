@@ -1,0 +1,20 @@
+[package]
+name = "messenger-server"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+tokio = { version = "1", features = ["full"] }
+rusqlite = { version = "0.31", features = ["bundled"] }
+axum = { version = "0.7", features = ["ws"] }
+axum-server = { version = "0.7", features = ["tls-rustls"] }
+uuid = { version = "1", features = ["v4"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+argon2 = { version = "0.5.3", features = ["password-hash"] }
+web-push = "0.10"
+dotenvy = "0.15"
+rustls = "0.23"
+rustls-pemfile = "2"
+
+futures = "0.3"

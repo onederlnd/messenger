@@ -1,0 +1,48 @@
+[package]
+name = "client"
+version = "0.1.0"
+authors = ["Randy Christenhusz <rchristenhusz@gmail.com>"]
+edition = "2021"
+
+[package.metadata.android]
+target_sdk_version = 34
+
+[[package.metadata.android.uses_permission]]
+name = "android.permission.INTERNET"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+
+[[bin]]
+name = "client"
+path = "src/main.rs"
+
+
+[dependencies]
+slint = { version = "1.9", features = ["backend-android-activity-06"] }
+tokio-tungstenite = {version = "0.24", features = ["rustls-tls-webpki-roots"] }
+tokio = { version = "1", features = ["full"] }
+rustls = { version = "0.23", features = ["ring"] }
+uuid = { version = "1", features = ["v4"]}
+serde = { version = "1", features = ["derive"]}
+rand_core = { version = "0.6", features = ["getrandom"] }
+x25519-dalek = { version = "2", features = ["static_secrets"] }
+directories = "5"
+rustls-pemfile = "2"
+serde_json = "1"
+hkdf = "0.12"
+sha2 = "0.10"
+chrono = "0.4"
+log = "0.4"
+android_logger = "0.14"
+futures-util = "0.3"
+chacha20poly1305 = "0.10"
+base64 = "0.22"
+
+
+
+[target.'cfg(target_os = "android")'.dependencies]
+android-activity = { version = "0.6",features = ["native-activity"] }
+
+[build-dependencies]
+slint-build = "1.9"

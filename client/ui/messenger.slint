@@ -1,0 +1,272 @@
+// client/ui/messenger.slint
+
+import { Button, LineEdit, ListView } from "std-widgets.slint";
+
+export struct FriendData {
+    id: string,
+    username: string,
+    display_name: string,
+    avatar: string,
+    initial: string,
+    last-message: string,
+    last-message-time: string,
+}
+
+export struct MessageData {
+    id: string,
+    text: string,
+    is_mine: bool,
+    is_error: bool,
+    delivered: bool,
+    read: bool,
+}
+
+export component AppWindow inherits Window {
+    background: #1a1a2e;
+    padding-top: 24px;
+
+    in property <string> login-error: "";
+    in property <string> send-error: "";
+    in property <bool> is-register: false;
+    in property <[FriendData]> friends: [];
+    in property <[FriendData]> pending-incoming: [];
+    in property <[MessageData]> chat-messages: [];
+    in property <length> safe-area-top: 0px;
+
+    in-out property <bool> logged-in: false;
+    in-out property <string> my-user-id: "";
+    in-out property <string> active-chat-friend-id: "";
+    in-out property <string> active-chat-friend-name: "";
+    in-out property <string> my-initial: "";
+    in-out property <string> msg-input-text: "";
+
+    callback login-clicked(string, string);
+    callback register-clicked(string, string);
+    callback toggle-clicked();
+    callback quick-login(string, string);
+    callback friend-request-response(string, bool);
+    callback open-chat(string, string);
+    callback send-message(string);
+    callback close-chat();
+    callback open-settings();
+
+
+    if !logged-in: VerticalLayout {
+        alignment: center;
+        padding: 32px;
+        spacing: 12px;
+
+        Text {
+            text: is-register ? "Create account" : "Welcome back";
+            font-size: 24px;
+            font-weight: 700;
+            color: white;
+            horizontal-alignment: center;
+        }
+
+        username-input := LineEdit { placeholder-text: "username"; }
+        password-input := LineEdit { placeholder-text: "password"; input-type: password; }
+
+        if login-error != "": Text { text: login-error; color: #ff6b6b; font-size: 13px; }
+
+        Button {
+            text: is-register ? "Register" : "Log in";
+            primary: true;
+            clicked => {
+                if (is-register) {
+                    root.register-clicked(username-input.text, password-input.text);
+                } else {
+                    root.login-clicked(username-input.text, password-input.text);
+                }
+            }
+        }
+
+        Button {
+            text: is-register ? "Have an account? Log in" : "Need an account? Register";
+            clicked => { root.toggle-clicked(); }
+        }
+
+        Rectangle { height: 20px; }
+        Text { text: "Dev tools"; font-size: 11px; color: #888; horizontal-alignment: center; }
+        HorizontalLayout {
+            spacing: 8px;
+            alignment: center;
+            Button { text: "randy"; clicked => { root.quick-login("randy", "password123"); } }
+            Button { text: "jessica"; clicked => { root.quick-login("jessica", "password123"); } }
+        }
+    }
+
+    if logged-in && active-chat-friend-id == "": VerticalLayout {
+        padding-top: 50px;
+        padding-left: 16px;
+        padding-right: 16px;
+        padding-bottom: 16px;
+        spacing: 12px;
+
+        HorizontalLayout {
+            Text { text: "Friends"; font-size: 22px; font-weight: 700; color: white; }
+            Rectangle { horizontal-stretch: 1; }
+            settings-button := TouchArea {
+                width: 36px;
+                height: 36px;
+                clicked => { root.open-settings(); }
+                Rectangle {
+                    width: 32px;
+                    height: 32px;
+                    border-radius: 16px;
+                    background: settings-button.has-hover ? #2e2e4e : transparent;
+                    Text {
+                        text: root.my-initial;
+                        color: white;
+                        font-size: 18px;
+                        horizontal-alignment: center;
+                        vertical-alignment: center;
+                    }
+                }
+            }
+        }
+        ListView {
+            for friend in root.friends: TouchArea {
+                height: 52px;
+                clicked => { root.open-chat(friend.id, friend.display_name != "" ? friend.display_name : friend.username); }
+                Rectangle {
+                    width: parent.width;
+                    height: parent.height;
+                    background: #24243e;
+                    border-radius: 10px;
+                    
+                    HorizontalLayout {
+                        padding: 8px;
+                        spacing: 10px;
+
+                        Rectangle {
+                            width: 44px;
+                            height: 44px;
+                            border-radius: 22px;
+                            background: #4e6ef2;
+                            Text {
+                                text: friend.initial;
+                                color: white;
+                                font-size: 18px;
+                                horizontal-alignment: center;
+                                vertical-alignment: center;
+                            }
+                        }
+                        VerticalLayout {
+                            alignment: center;
+                            spacing: 2px;
+
+                            Text {
+                                text: friend.display_name != "" ? friend.display_name : friend.username;
+                                color: white;
+                                font-size: 16px;
+                            }
+                            Text {
+                                text: friend.last-message != "" ? friend.last-message : "No messages yet";
+                                color: #aaa; 
+                                font-size: 18px;
+                            }
+                        }
+                        Rectangle { horizontal-stretch: 1; }
+
+                        Text {
+                            text: friend.last-message-time;
+                            color: #888;
+                            font-size: 11px;
+                            vertical-alignment: center;
+                        }
+                    }
+                }
+            }
+        }
+
+
+        if pending-incoming.length > 0: Text { text: "Pending requests"; font-size: 15px; color: #aaa; }
+        for req in root.pending-incoming: HorizontalLayout {
+            spacing: 8px;
+            Text { text: req.username; color: white; vertical-alignment: center; }
+            Button { text: "Accept"; clicked => { root.friend-request-response(req.id, true); } }
+            Button { text: "Decline"; clicked => { root.friend-request-response(req.id, false); } }
+        }
+    }
+    if logged-in && active-chat-friend-id != "": Rectangle {
+        VerticalLayout {
+            padding-top: 40px;
+            padding-left: 16px;
+            padding-right: 16px;
+            padding-bottom: 16px;
+            spacing: 10px;
+        
+
+            HorizontalLayout {
+                spacing: 8px;
+                back-button:= TouchArea {
+                    width: 36px;
+                    height: 36px;
+                    clicked => { root.close-chat(); }
+                    
+                    Rectangle {
+                        width: 36px;
+                        height: 36px;
+                        border-radius: 18px;
+                        background: back-button.has-hover ? #2e2e4e : transparent;
+                        
+                        Text {
+                            text: "←";
+                            color: white;
+                            font-size: 20px;
+                            horizontal-alignment: center;
+                            vertical-alignment: center;
+                        }
+                     }
+                }
+                Text { text: root.active-chat-friend-name; font-size: 18px; font-weight: 700; color: white; vertical-alignment: center; }
+            }
+
+            chat-list := ListView {
+                for msg in root.chat-messages: HorizontalLayout {
+                    padding-top: 4px;
+                    padding-bottom: 4px;
+                    alignment: msg.is-mine ? end : start;
+                    Rectangle {
+                        background: msg.is-error ? #3a2626 : (msg.is-mine ? #4e6ef2 : #2e2e4e);
+                        border-radius: 14px;
+                        width: bubble-text.preferred-width + 20px;
+                        height: bubble-text.preferred-height + 20px;
+                        bubble-text := Text {
+                            text: msg.text;
+                            color: msg.is-error ? #ff9b9b : white;
+                            wrap: word-wrap;
+                            x: 10px;
+                            y: 10px; 
+                        }
+                        if msg.is-mine && !msg.is-error: Text {
+                            text: msg.read ? "✓✓" : (msg.delivered? "✓": "✓✓");
+                            color: msg.read ? #6ee7ff : #cccccc;
+                            font-size: 10px;
+                            x: parent.width - self.preferred-width - 6px;
+                            y: parent.height - self.preferred-height - 2px;
+                        }
+                    
+                    }
+                }
+            }
+            if root.send-error != "": Text {
+                text: root.send-error;
+                color: #ff6b6b;
+                font-size: 13px;
+            }
+            HorizontalLayout {
+                spacing: 8px;
+                msg-input := LineEdit { placeholder-text: "Message..."; text <=> root.msg-input-text; }
+                Button {
+                    text: "Send";
+                    primary: true;
+                    clicked => {
+                        root.send-message(root.msg-input-text);
+                    }
+                }
+            }
+        }
+    }
+}
